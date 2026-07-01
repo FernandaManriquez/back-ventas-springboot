@@ -1,163 +1,186 @@
-Backend Ventas
+# Backend Ventas - Innovatech Chile
 
-Microservicio backend desarrollado con Spring Boot para la gestión de ventas y órdenes de compra.
-El proyecto fue contenedorizado utilizando Docker, publicado en Docker Hub y desplegado en una instancia EC2 de AWS como parte de la Evaluación Parcial N°2 de Introducción a Herramientas DevOps.
+API REST encargada de gestionar la información relacionada con ventas y órdenes de compra del sistema Innovatech Chile.
 
-Tecnologías utilizadas
-Java 17
-Spring Boot
-Maven
-Docker
-Docker Compose
-Docker Hub
-GitHub Actions
-AWS EC2
-MySQL Connector
-Repositorio
-https://github.com/FernandaManriquez/back-ventas-springboot
-Imagen en Docker Hub
-ninii04/back-ventas-springboot:latest
-Puerto utilizado
+Este backend forma parte de una solución compuesta por:
+
+- Frontend React/Vite.
+- Backend Ventas Spring Boot.
+- Backend Despachos Spring Boot.
+- Base de datos relacional MySQL.
+
+## Tecnologías utilizadas
+
+- Java
+- Spring Boot
+- Maven
+- MySQL
+- Docker
+- AWS ECS Fargate
+- Amazon ECR
+- Amazon RDS
+- Application Load Balancer
+- GitHub Actions
+- CloudWatch Logs
+
+## Función dentro del sistema
+
+El backend de ventas expone servicios relacionados con ventas y órdenes de compra.
+
+En la arquitectura cloud, este servicio se ejecuta como una tarea independiente en Amazon ECS Fargate.  
+El servicio se conecta a una base de datos MySQL alojada en Amazon RDS y es accesible mediante reglas de ruta configuradas en el Application Load Balancer.
+
+## Puerto del servicio
+
+Puerto local y del contenedor:
+
+```text
 8082
-Descripción del proyecto
+```
 
-Este microservicio backend permite gestionar órdenes de venta y compras del sistema principal.
+## Endpoints principales
 
-El backend fue desarrollado utilizando Spring Boot y posteriormente contenedorizado con Docker para su despliegue en AWS EC2.
+Endpoint base local:
 
-El servicio fue desplegado junto al microservicio de despachos utilizando Docker Compose.
+```text
+http://localhost:8082/api/v1/ventas
+```
 
-Arquitectura general
-Frontend React + Vite
-        |
-        v
-Backend Ventas (Spring Boot)
-Puerto 8082
-        |
-        v
-Backend Despachos (Spring Boot)
-Puerto 8081
-Ejecución local
+Health check local:
 
-Compilar proyecto:
+```text
+http://localhost:8082/api/v1/ventas/health
+```
 
-mvn clean package
+En AWS, el backend se expone mediante el Application Load Balancer usando la ruta:
 
-Ejecutar aplicación:
+```text
+/api/v1/ventas
+```
 
-java -jar target/*.jar
-Construcción de imagen Docker
-docker build -t back-ventas-springboot .
-Ejecución con Docker
+Health check en AWS:
+
+```text
+/api/v1/ventas/health
+```
+
+## Ejecución local con Maven
+
+Entrar a la carpeta del proyecto Spring Boot:
+
+```bash
+cd Springboot-API-REST
+```
+
+Ejecutar la aplicación:
+
+```bash
+./mvnw spring-boot:run
+```
+
+En Windows también se puede usar:
+
+```bash
+mvnw.cmd spring-boot:run
+```
+
+## Ejecución con Docker
+
+Construir la imagen Docker:
+
+```bash
+docker build -t back-ventas-springboot ./Springboot-API-REST
+```
+
+Ejecutar el contenedor:
+
+```bash
 docker run -p 8082:8082 back-ventas-springboot
-Docker Compose utilizado en EC2
+```
 
-Archivo docker-compose.yml utilizado para desplegar los microservicios backend:
+## Variables de entorno
 
-services:
-  despachos:
-    image: ninii04/back-despachos-springboot:latest
-    container_name: back-despachos
-    restart: always
-    ports:
-      - "8081:8081"
+Para conectarse a la base de datos se utilizan variables de entorno.  
+Esto evita dejar credenciales directamente escritas en el código fuente.
 
-  ventas:
-    image: ninii04/back-ventas-springboot:latest
-    container_name: back-ventas
-    restart: always
-    ports:
-      - "8082:8082"
-Instalación de Docker en EC2
-sudo dnf update -y
-sudo dnf install docker -y
-sudo systemctl start docker
-sudo systemctl enable docker
-Instalación de Docker Compose
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+Variables esperadas:
 
-sudo chmod +x /usr/local/bin/docker-compose
+```text
+SERVER_PORT=8082
+DB_ENDPOINT=endpoint-rds
+DB_PORT=3306
+DB_NAME=innovatech
+DB_USERNAME=usuario
+DB_PASSWORD=password
+```
 
-docker-compose --version
-Creación de carpeta de despliegue
-mkdir -p app
-cd app
-Levantamiento de contenedores
-sudo docker-compose up -d
+## Base de datos
 
-Verificación de contenedores:
+El backend se conecta a una base de datos MySQL.
 
-sudo docker ps
-Actualización de contenedores
-sudo docker-compose pull
+En ambiente local puede utilizarse MySQL mediante Docker Compose.  
+En ambiente cloud se utiliza Amazon RDS MySQL.
 
-sudo docker-compose down
+## Dockerfile
 
-sudo docker-compose up -d
-Endpoint principal
-http://3.238.144.162:8082
+El Dockerfile permite empaquetar la aplicación Spring Boot como una imagen Docker para su despliegue en ECS Fargate.
 
-Ejemplo de endpoint:
+El contenedor expone el puerto:
 
-http://3.238.144.162:8082/api/v1/ventas
-CI/CD con GitHub Actions
+```text
+8082
+```
 
-El proyecto utiliza GitHub Actions para automatizar la construcción y publicación de imágenes Docker.
+## CI/CD
 
-El workflow se ejecuta automáticamente al realizar push sobre la rama:
+El pipeline de GitHub Actions automatiza el proceso de despliegue.
 
-deploy
-Pipeline implementado
+Flujo esperado:
 
-El pipeline realiza automáticamente:
+1. Checkout del repositorio.
+2. Ejecución de pruebas con Maven.
+3. Construcción de imagen Docker.
+4. Publicación de la imagen en Amazon ECR.
+5. Actualización del servicio correspondiente en Amazon ECS Fargate.
 
-Checkout del repositorio.
-Login en Docker Hub.
-Build de la imagen Docker.
-Push de la imagen actualizada hacia Docker Hub.
-Secrets utilizados
-DOCKER_HUB_USERNAME
-DOCKER_HUB_TOKEN
+## Despliegue en AWS
 
-Estos secrets fueron configurados dentro de GitHub Actions para autenticar Docker Hub de forma segura.
+Servicios utilizados:
 
-Configuración de variables de entorno
+- Amazon ECR para almacenar la imagen Docker.
+- Amazon ECS Fargate para ejecutar el backend.
+- Amazon RDS MySQL como base de datos.
+- Application Load Balancer para enrutar solicitudes.
+- CloudWatch Logs para observabilidad.
+- GitHub Actions para CI/CD.
 
-El backend fue preparado para utilizar variables de entorno relacionadas con base de datos:
+## Seguridad
 
-DB_ENDPOINT
-DB_PORT
-DB_NAME
-DB_USERNAME
-DB_PASSWORD
-Persistencia y base de datos
+Buenas prácticas consideradas:
 
-Durante el desarrollo se realizaron pruebas de integración utilizando MySQL y volúmenes Docker para persistencia de datos.
+- Uso de variables de entorno para credenciales.
+- Uso de GitHub Secrets para credenciales AWS.
+- Exposición mínima de puertos.
+- Acceso a RDS restringido desde los servicios ECS.
+- Uso de roles IAM con permisos necesarios.
 
-La configuración fue validada mediante Docker Compose y variables de entorno.
+## Evidencias esperadas para la defensa
 
-Debido a las limitaciones de recursos de la instancia t3.micro proporcionada por AWS Academy, la integración simultánea de MySQL y múltiples microservicios Spring Boot generó problemas de estabilidad y saturación de recursos durante la demostración.
+Para la defensa técnica se deben mostrar:
 
-Por motivos de estabilidad del despliegue, se mantuvo la arquitectura basada en microservicios contenedorizados y se documentó la persistencia como mejora técnica futura.
+- Dockerfile del backend.
+- Imagen publicada en Amazon ECR.
+- Servicio ECS en estado Running.
+- Target Group asociado en estado Healthy.
+- Endpoint `/api/v1/ventas/health` respondiendo correctamente.
+- Logs del servicio en CloudWatch.
+- Pipeline de GitHub Actions ejecutado correctamente.
 
-Evidencias de funcionamiento
+## Integrantes
 
-Se verificó correctamente:
+- Catrina Corral
+- Fernanda Manríquez
 
-Imagen publicada en Docker Hub.
-Pipeline ejecutado exitosamente en GitHub Actions.
-Contenedores desplegados en AWS EC2.
-Docker Compose funcionando correctamente.
-Comunicación entre frontend y backend mediante IP pública.
-Consideraciones
+## Asignatura
 
-El proyecto fue desplegado utilizando una arquitectura basada en contenedores Docker y microservicios independientes.
-
-La separación entre frontend y backend permitió demostrar conceptos de:
-
-Contenedorización.
-Despliegue en AWS EC2.
-Docker Compose.
-Automatización CI/CD.
-Publicación de imágenes en Docker Hub.
-Comunicación entre servicios distribuidos.
+Introducción a Herramientas DevOps - ISY1101
